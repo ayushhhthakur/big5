@@ -1,0 +1,28 @@
+/* Base container styles */
+#big-five-embed {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  min-height: 600px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  background: linear-gradient(to bottom right, #fff8e1, #fff3e0);
+  border: 1px solid #ffe0b2;
+}
+
+/* Responsive styles */
+@media (max-width: 640px) {
+  #big-five-embed {
+    min-height: 500px;
+    border-radius: 8px;
+    padding: 12px;
+  }
+}
+
+/* Theme variations */
+#big-five-embed[data-theme="dark"] {
+  background: linear-gradient(to bottom right, #1a1a1a, #2d2d2d);
+  border-color: #404040;
+  color: #ffffff;
+}
