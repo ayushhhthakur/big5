@@ -1,6 +1,8 @@
 import { calculateTraitScores } from '../utils/scoring';
 import { PersonalityChart } from './PersonalityChart';
 import { PersonalityInsights } from './PersonalityInsights';
+import { useEffect } from 'react';
+import axios from 'axios';
 
 interface ResultsCardProps {
   scores: number[];
@@ -30,6 +32,22 @@ export function ResultsCard({ scores }: ResultsCardProps) {
     agreeableness: traitScores[1],
     neuroticism: traitScores[3]
   };
+
+  function saveResultsToServer(scores: number[], traitScores: { [key: string]: number }) {
+    axios.post('http://localhost:3000/save-results', {
+      traitScores,
+    })
+    .then(response => {
+      console.log(response.data);
+    })
+    .catch(error => {
+      console.error('Error saving results:', error);
+    });
+  }
+
+  useEffect(() => {
+    saveResultsToServer(scores, personalityTraits);
+  }, [scores, personalityTraits]);
 
   return (
     <div className="mt-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-amber-100">
