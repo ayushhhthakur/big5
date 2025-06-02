@@ -1,14 +1,16 @@
+import React, { useEffect, useState } from 'react';
 import { calculateTraitScores } from '../utils/scoring';
+import { supabase } from '../supabaseClient';
 import { PersonalityChart } from './PersonalityChart';
-import { PersonalityInsights } from './PersonalityInsights';
-import { useEffect } from 'react';
-import axios from 'axios';
 
 interface ResultsCardProps {
   scores: number[];
+  email: string;
 }
 
-export function ResultsCard({ scores }: ResultsCardProps) {
+type ProfileScoreResponse = { profile_score: number } | null; // Supabase response type
+
+export function ResultsCard({ scores, email }: ResultsCardProps) {
   const traitScores = calculateTraitScores(scores);
   const traits = [
     { name: 'Extraversion', description: 'Energy, positive emotions, assertiveness, sociability and the tendency to seek stimulation in the company of others.' },
@@ -25,60 +27,112 @@ export function ResultsCard({ scores }: ResultsCardProps) {
     return 'text-emerald-600';
   };
 
-  const personalityTraits = {
-    openness: traitScores[4],
-    conscientiousness: traitScores[2],
-    extraversion: traitScores[0],
-    agreeableness: traitScores[1],
-    neuroticism: traitScores[3]
-  };
+  // take no decimal points. if score is 23.34 take 23
+  const personalityScore = Math.floor(((traitScores[4] * 0.2 ) + (traitScores[2] * 0.2) + (traitScores[0] * 0.2) + (traitScores[1] * 0.2) + (traitScores[3] * 0.2)) * 0.3);
 
-  function saveResultsToServer(scores: number[], traitScores: { [key: string]: number }) {
-    axios.post('http://localhost:3000/save-results', {
-      traitScores,
-    })
-    .then(response => {
-      console.log(response.data);
-    })
-    .catch(error => {
-      console.error('Error saving results:', error);
-    });
-  }
+  // State for profileScore, fitmentScore, and error
+  const [profileScore, setProfileScore] = useState<number | null>(null);
+  const [fitmentScore, setFitmentScore] = useState<number | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  // Fetch profile_score and calculate fitment_score
+  useEffect(() => {
+    async function fetchProfileScore() {
+      setFetchError(null);
+      try {
+        const { data, error } = await supabase
+          .from('resumes')
+          .select('profile_score')
+          .eq('email', email)
+          .single();
+        if (error) {
+          setFetchError('Failed to fetch profile score.');
+          setProfileScore(null);
+          setFitmentScore(null);
+        } else if (data && data.profile_score != null) {
+          setProfileScore(data.profile_score);
+          setFitmentScore(Math.floor(data.profile_score + personalityScore));
+        } else {
+          setProfileScore(null);
+          setFitmentScore(null);
+        }
+      } catch (err) {
+        setFetchError('An unexpected error occurred.');
+        setProfileScore(null);
+        setFitmentScore(null);
+      }
+    }
+    fetchProfileScore();
+  }, [email, personalityScore]);
 
   useEffect(() => {
-    saveResultsToServer(scores, personalityTraits);
-  }, [scores, personalityTraits]);
+    // Update the user's scores in Supabase
+    async function updateScores() {
+      await supabase
+        .from('resumes')
+        .update({
+          openness: traitScores[4],
+          conscientiousness: traitScores[2],
+          extraversion: traitScores[0],
+          agreeableness: traitScores[1],
+          neuroticism: traitScores[3],
+          personality_analysis_completed: true,
+          personality_score: personalityScore,
+          fitment_score: fitmentScore,
+        })
+        .eq('email', email);
+    }
+    if (fitmentScore !== null) {
+      updateScores();
+    }
+  }, [traitScores, email, personalityScore, fitmentScore]);
 
   return (
-    <div className="mt-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-amber-100">
-      <h2 className="text-2xl font-bold text-amber-900 mb-6">Your Personality Profile</h2>
-      
-      <PersonalityChart scores={traitScores} />
-
-      <div className="space-y-6 mb-8">
-        {traits.map((trait, index) => (
-          <div key={trait.name} className="border-b border-amber-200 pb-4 last:border-0">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-semibold text-amber-900">{trait.name}</h3>
-              <span className={`text-xl font-bold ${getScoreColor(traitScores[index])}`}>
-                {traitScores[index]}
-              </span>
-            </div>
-            <p className="text-sm text-amber-700">{trait.description}</p>
-            <div className="mt-2 w-full bg-amber-100 rounded-full h-2">
-              <div
-                className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(traitScores[index] + 50)}%` }}
-              ></div>
-            </div>
+    <div className="mt-10 flex flex-col items-center">
+      <div className="w-full max-w-2xl bg-white p-8 rounded-xl border border-amber-100 animate-fade-in">
+        <h2 className="text-2xl font-semibold text-center text-amber-800 mb-8">Your Personality Profile</h2>
+        {fetchError && (
+          <div className="mb-4 text-red-600 text-center text-sm">{fetchError}</div>
+        )}
+        <div className="flex flex-col md:flex-row md:gap-10 md:items-start mb-8">
+          <div className="flex-1 flex items-center justify-center mb-6 md:mb-0">
+            <PersonalityChart scores={traitScores} />
           </div>
-        ))}
+          <div className="flex-1">
+            <ul className="space-y-5">
+              {traits.map((trait, index) => (
+                <li key={trait.name} className="flex flex-col gap-1 bg-amber-50 rounded p-4 border border-amber-100">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-base font-semibold text-amber-800">{trait.name}</span>
+                    <span className={`text-base font-semibold px-2 py-0.5 rounded ${getScoreColor(traitScores[index])} bg-amber-100`}>{traitScores[index]}</span>
+                  </div>
+                  <div className="w-full bg-amber-100 rounded-full h-2 mb-1">
+                    <div
+                      className="bg-amber-500 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.max(0, Math.min(100, traitScores[index]))}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-amber-500">{trait.description}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        {/* Optionally show scores */}
+        <div className="flex flex-col md:flex-row justify-center items-center gap-6 mt-4">
+          {typeof profileScore === 'number' && (
+            <div className="text-sm text-amber-700 bg-amber-100 rounded px-4 py-2">Profile Score: <span className="font-bold">{profileScore}</span></div>
+          )}
+          <div className="text-sm text-amber-700 bg-amber-100 rounded px-4 py-2">Personality Score: <span className="font-bold">{personalityScore}</span></div>
+          {typeof fitmentScore === 'number' && (
+            <div className="text-sm text-amber-700 bg-amber-100 rounded px-4 py-2">Fitment Score: <span className="font-bold">{fitmentScore}</span></div>
+          )}
+        </div>
       </div>
-
-      <PersonalityInsights 
-        scores={scores} 
-        traitScores={personalityTraits} 
-      />
+      <style>{`
+        @keyframes fade-in { from { opacity: 0; transform: translateY(12px);} to { opacity: 1; transform: none; } }
+        .animate-fade-in { animation: fade-in 0.5s cubic-bezier(.4,0,.2,1); }
+      `}</style>
     </div>
   );
 }

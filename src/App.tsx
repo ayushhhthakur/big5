@@ -3,6 +3,7 @@ import { Dice6, ArrowLeft, ArrowRight, PlayCircle } from 'lucide-react';
 import { questions } from './data/questions';
 import { ResultsCard } from './components/ResultsCard';
 import { SplashPage } from './components/SplashPage';
+import { EmailGate } from './components/EmailGate';
 
 interface AppProps {
   isEmbedded?: boolean;
@@ -19,6 +20,7 @@ function App({ isEmbedded = false }: AppProps) {
     originalScore: number;
     finalScore: number;
   }>>([]);
+  const [authorizedEmail, setAuthorizedEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -60,65 +62,82 @@ function App({ isEmbedded = false }: AppProps) {
     ? 'min-h-screen bg-gradient-to-br from-amber-50 to-amber-100 font-sans text-amber-900 p-4'
     : 'container mx-auto max-w-2xl min-h-screen bg-gradient-to-br from-amber-50 to-amber-100 font-sans text-amber-900 p-4';
 
+  if (!authorizedEmail) {
+    return <EmailGate onAuthorized={setAuthorizedEmail} />;
+  }
+
   return (
-    <div className={containerClasses}>
+    <div className="min-h-screen bg-amber-50 flex flex-col items-center">
       {!started ? (
         <SplashPage onStart={handleStart} isEmbedded={isEmbedded} />
       ) : !isComplete ? (
-        <div className="mt-8">
+        <div className="mt-8 animate-fade-in w-full max-w-xl mx-auto">
+          {/* Minimal Progress Bar */}
+          <div className="w-full h-1 bg-amber-100 rounded mb-8">
+            <div
+              className="h-1 bg-amber-500 rounded transition-all duration-300"
+              style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
+            ></div>
+          </div>
+
           <div className="flex justify-between items-center mb-8">
             <button
               onClick={handlePrev}
               disabled={currentQuestion === 0}
-              className="p-2 text-amber-600 disabled:text-amber-300 hover:text-amber-700 disabled:hover:text-amber-300"
+              className="px-3 py-2 rounded bg-white border border-amber-100 text-amber-500 hover:bg-amber-100 transition disabled:opacity-40"
+              aria-label="Previous question"
             >
-              <ArrowLeft size={24} />
+              Prev
             </button>
-            <span className="text-lg font-medium">
-              Question {currentQuestion + 1} of {questions.length}
+            <span className="text-base font-medium text-amber-700">
+              {currentQuestion + 1} / {questions.length}
             </span>
             {currentQuestion === questions.length - 1 ? (
               <button
                 onClick={handleComplete}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                className="px-6 py-2 rounded bg-amber-500 text-white font-medium hover:bg-amber-600 transition"
               >
-                <PlayCircle size={20} />
                 Complete
               </button>
             ) : (
               <button
                 onClick={handleNext}
                 disabled={currentQuestion === questions.length - 1}
-                className="p-2 text-amber-600 disabled:text-amber-300 hover:text-amber-700 disabled:hover:text-amber-300"
+                className="px-3 py-2 rounded bg-white border border-amber-100 text-amber-500 hover:bg-amber-100 transition disabled:opacity-40"
+                aria-label="Next question"
               >
-                <ArrowRight size={24} />
+                Next
               </button>
             )}
           </div>
 
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 mb-8 border border-amber-100">
-            <h2 className="text-xl font-bold mb-6">{questions[currentQuestion].text}</h2>
-            <div className="grid grid-cols-5 gap-4">
-              {[1, 2, 3, 4, 5].map((score) => (
-                <button
-                  key={score}
-                  onClick={() => {
-                    handleScore(score);
-                    if (currentQuestion < questions.length - 1) {
-                      handleNext();
-                    }
-                  }}
-                  className={`p-4 rounded-xl font-medium transition-all ${
-                    scores[currentQuestion] === (questions[currentQuestion].code < 0 ? 6 - score : score)
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-amber-100 hover:bg-amber-200 text-amber-900'
-                  }`}
-                >
-                  {score}
-                </button>
-              ))}
+          <div className="bg-white p-8 rounded-xl border border-amber-100 mb-10 animate-fade-in text-center">
+            <h2 className="text-xl font-semibold text-amber-800 mb-8">
+              {questions[currentQuestion].text}
+            </h2>
+            <div className="flex justify-center gap-3 mb-2">
+              {[1, 2, 3, 4, 5].map((score) => {
+                const isSelected = scores[currentQuestion] === (questions[currentQuestion].code < 0 ? 6 - score : score);
+                return (
+                  <button
+                    key={score}
+                    onClick={() => {
+                      handleScore(score);
+                      if (currentQuestion < questions.length - 1) {
+                        handleNext();
+                      }
+                    }}
+                    className={`w-12 h-12 text-lg font-semibold rounded border transition-all duration-150 flex items-center justify-center
+                      ${isSelected ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100 hover:border-amber-400'}
+                    `}
+                    aria-label={`Score ${score}`}
+                  >
+                    {score}
+                  </button>
+                );
+              })}
             </div>
-            <div className="flex justify-between text-sm text-amber-600 mt-4">
+            <div className="flex justify-between text-sm text-amber-400 mt-6">
               <span>Strongly Disagree</span>
               <span>Strongly Agree</span>
             </div>
@@ -134,9 +153,13 @@ function App({ isEmbedded = false }: AppProps) {
               ))}
             </div>
           )}
+          <style>{`
+            @keyframes fade-in { from { opacity: 0; transform: translateY(12px);} to { opacity: 1; transform: none; } }
+            .animate-fade-in { animation: fade-in 0.5s cubic-bezier(.4,0,.2,1); }
+          `}</style>
         </div>
       ) : (
-        <ResultsCard scores={scores} />
+        <ResultsCard scores={scores} email={authorizedEmail} />
       )}
     </div>
   );

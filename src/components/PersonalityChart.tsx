@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Chart as ChartJS,
   RadialLinearScale,
@@ -29,7 +28,7 @@ export function PersonalityChart({ scores }: PersonalityChartProps) {
     datasets: [
       {
         label: 'Your Personality Profile',
-        data: scores.map(score => (score + 50) / 100),
+        data: scores.map(score => score / 100),
         backgroundColor: 'rgba(16, 185, 129, 0.2)',
         borderColor: 'rgba(16, 185, 129, 1)',
         borderWidth: 2,
@@ -73,9 +72,26 @@ export function PersonalityChart({ scores }: PersonalityChartProps) {
     },
   };
 
+  const labels = ['Extraversion', 'Agreeableness', 'Conscientiousness', 'Neuroticism', 'Openness'];
+
   return (
-    <div className="aspect-square w-full max-w-md mx-auto mb-8">
-      <Radar data={data} options={options} />
+    <div className="w-full flex flex-col items-center">
+      <div className="bg-white/90 rounded-2xl shadow-xl border border-amber-100 p-6 mb-4 animate-fade-in">
+        <h3 className="text-lg font-bold text-amber-700 mb-4 text-center">Big Five Trait Profile</h3>
+        <Radar data={data} options={options} />
+        <div className="flex flex-wrap justify-center gap-4 mt-6">
+          {labels.map((trait, idx) => (
+            <span key={trait} className="flex items-center gap-2 text-amber-700 text-sm font-semibold">
+              <span className="inline-block w-4 h-4 rounded-full" style={{ background: ['#10b981', '#f59e42', '#fbbf24', '#6366f1', '#f43f5e'][idx] }}></span>
+              {trait}
+            </span>
+          ))}
+        </div>
+      </div>
+      <style>{`
+        @keyframes fade-in { from { opacity: 0; transform: translateY(24px);} to { opacity: 1; transform: none; } }
+        .animate-fade-in { animation: fade-in 0.8s cubic-bezier(.4,0,.2,1); }
+      `}</style>
     </div>
   );
 }

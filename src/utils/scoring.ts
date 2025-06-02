@@ -12,8 +12,9 @@ export function calculateTraitScores(scores: number[]): number[] {
 
   scores.forEach((score, index) => {
     const question = questions[index];
+    let actualScore = score + 5;
     const traitIndex = (Math.abs(question.code) % 5 || 5) - 1;
-    traitScores[traitIndex] += score;
+    traitScores[traitIndex] += actualScore;
   });
 
   return traitScores;

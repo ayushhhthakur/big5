@@ -22,7 +22,7 @@ export async function analyzePersonality(
   calculatedTraits: PersonalityTraits
 ): Promise<PersonalityAnalysis> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     const prompt = `
       You are a professional psychologist analyzing Big Five personality test results.
