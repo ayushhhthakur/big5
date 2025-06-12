@@ -10,29 +10,17 @@ A modern, responsive implementation of the Big Five (OCEAN) personality test wit
 - Beautiful, responsive UI with Tailwind CSS
 - Embeddable version for third-party websites
 
-## Embedding the Test
+## Taking the Personality Test
 
-To embed the personality test in your website, add the following code:
+Follow these steps to take the test:
 
-```html
-<!-- Add the container for the test -->
-<div id="big-five-embed"></div>
+- Make sure you have an active profile on people.ai (Admin).
+- Upload the resume before starting the test.
+- Use the same email ID mentioned in your resume.
+- Answer all the questions and submit the test once you're done.
+- The test can only be taken **once**. If you face any issues, please contact the admin.
 
-<!-- Add the script -->
-<script type="module" src="https://your-domain.com/embed.js"></script>
-```
-
-### Customization Options
-
-You can customize the embed by adding URL parameters:
-
-- `theme`: Choose between 'light' and 'dark' (default: 'light')
-- `lang`: Set the language (default: 'en')
-
-Example:
-```html
-<script type="module" src="https://your-domain.com/embed.js?theme=dark&lang=en"></script>
-```
+ 
 
 ## Development
 
